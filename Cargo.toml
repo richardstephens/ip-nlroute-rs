@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "ip-nlroute",
+  "ip-nlroute-cli",
+]
+resolver = "2"
