@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+neli = "0.7"
+nix = { version = "0.31", features = ["net"] }
+thiserror = "2"
