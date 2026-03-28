@@ -1,10 +1,9 @@
 use crate::NetlinkRouteHandle;
-use crate::addr::{AddrGetInterface, AddrGetInterfaceAddressV4, AddrGetResponse};
+use crate::addr::{AddrGetInterface, AddrGetInterfaceAddressV4, AddrGetResponse, AddressFlags};
 use crate::error::Error;
 use crate::util::mappers::ip::{rtattr_to_ipv4, rtattr_to_string};
 use neli::router::synchronous::NlRouterReceiverHandle;
 use neli::{
-    attr::Attribute,
     consts::{
         nl::NlmF,
         rtnl::{Ifa, RtAddrFamily, RtScope, Rtm},
@@ -72,24 +71,26 @@ impl AddrGetRequest {
                     p.ifa_scope()
                 );
 
-                let (mut local, mut address, mut broadcast, mut label) = (None, None, None, None);
+                let mut local = None;
+                let mut address = None;
+                let mut broadcast = None;
+                let mut label = None;
+                let flags = AddressFlags::from(*p.ifa_flags());
                 for rtattr in p.rtattrs().iter() {
                     match *rtattr.rta_type() {
                         Ifa::Local => local = Some(rtattr_to_ipv4(rtattr)?),
-
                         Ifa::Address => address = Some(rtattr_to_ipv4(rtattr)?),
                         Ifa::Broadcast => broadcast = Some(rtattr_to_ipv4(rtattr)?),
-
                         Ifa::Label => label = Some(rtattr_to_string(rtattr)?),
-
-                        other => {
-                            println!("{:?}:{:?}", other, rtattr.payload().as_ref());
+                        _other => {
+                            //    println!("{:?}:{:?}", _other, rtattr.payload().as_ref());
                         }
                     }
                 }
 
                 interface.addresses.push(AddrGetInterfaceAddressV4 {
                     prefix_len,
+                    flags,
                     local,
                     address,
                     broadcast,
@@ -97,8 +98,7 @@ impl AddrGetRequest {
                 });
 
                 interfaces_by_index.insert(if_index, interface);
-
-                println!("---\n");
+                //println!("---\n");
             }
         }
 

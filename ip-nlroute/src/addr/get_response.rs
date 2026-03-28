@@ -1,3 +1,4 @@
+use super::AddressFlags;
 use std::collections::BTreeMap;
 use std::net::Ipv4Addr;
 
@@ -14,6 +15,7 @@ pub struct AddrGetInterface {
 #[derive(Debug, Default)]
 pub struct AddrGetInterfaceAddressV4 {
     pub prefix_len: u8,
+    pub flags: AddressFlags,
     pub local: Option<Ipv4Addr>,
     pub address: Option<Ipv4Addr>,
     pub broadcast: Option<Ipv4Addr>,
