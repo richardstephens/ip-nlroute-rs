@@ -10,6 +10,8 @@ pub enum Error {
     NetlinkSocket(#[from] neli::err::SocketError),
     #[error("failed to build address message")]
     IfaddrMsgBuilder(#[from] neli::rtnl::IfaddrmsgBuilderError),
+    #[error("failed to build route message")]
+    RtMsgBuilder(#[from] neli::rtnl::RtmsgBuilderError),
     #[error("netlink router error")]
     NlRouter(#[from] RouterError<u16, Buffer>),
     #[error("failed to send netlink request")]
