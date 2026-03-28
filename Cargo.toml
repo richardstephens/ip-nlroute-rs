@@ -4,3 +4,12 @@ members = [
   "ip-nlroute-cli",
 ]
 resolver = "2"
+
+[workspace.package]
+description = "High(er)-level interface for working with host network configuration on linux"
+version = "0.0.1"
+license = "MIT"
+repository = "https://github.com/richardstephens/ip-nlroute-rs"
+readme = "README.md"
+edition = "2024"
+authors = ["Richard Stephens <richard@richst.dev>"]
