@@ -16,10 +16,10 @@ pub fn rtattr_to_ipv4<T: RtaType>(rtattr: &Rtattr<T, Buffer>) -> Result<Ipv4Addr
 }
 
 pub fn rtattr_to_string<T: RtaType>(rtattr: &Rtattr<T, Buffer>) -> Result<String, Error> {
-    Ok(rtattr
+    rtattr
         .get_payload_as_with_len::<String>()
         .map_err(|e| Error::Deserialise {
             what: "string attribute",
             source: Box::new(e),
-        })?)
+        })
 }

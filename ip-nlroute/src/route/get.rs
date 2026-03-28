@@ -16,6 +16,12 @@ use nix::net::if_::if_indextoname;
 
 pub struct RouteGetRequest;
 
+impl Default for RouteGetRequest {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RouteGetRequest {
     pub fn new() -> Self {
         RouteGetRequest

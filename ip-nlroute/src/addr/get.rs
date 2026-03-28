@@ -62,7 +62,7 @@ impl AddrGetRequest {
 
                 let mut interface = interfaces_by_index
                     .remove(&if_index)
-                    .unwrap_or_else(|| AddrGetInterface::default());
+                    .unwrap_or_else(AddrGetInterface::default);
 
                 let family = *p.ifa_family();
                 let if_name = if_indextoname(if_index)
