@@ -1,4 +1,4 @@
-use crate::addr::get_addresses;
+use crate::addr::addr_main;
 use crate::args::{Args, Object};
 use clap::Parser;
 
@@ -9,10 +9,8 @@ fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     match args.obj {
-        Object::Addr => {
-            get_addresses()?;
-        }
-    }
+        Object::Addr(args) => addr_main(args),
+    }?;
 
     Ok(())
 }

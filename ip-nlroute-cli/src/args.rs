@@ -1,8 +1,9 @@
+use crate::addr::AddrArgs;
 use clap::{Parser, Subcommand};
 
 #[derive(Subcommand, Debug)]
 pub enum Object {
-    Addr,
+    Addr(AddrArgs),
 }
 
 #[derive(Parser, Debug)]

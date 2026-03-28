@@ -1,5 +1,7 @@
 use crate::NetlinkRouteHandle;
+use crate::addr::{AddrGetInterface, AddrGetInterfaceAddressV4, AddrGetResponse};
 use crate::error::Error;
+use crate::util::mappers::ip::{rtattr_to_ipv4, rtattr_to_string};
 use neli::router::synchronous::NlRouterReceiverHandle;
 use neli::{
     attr::Attribute,
@@ -10,23 +12,39 @@ use neli::{
     nl::{NlPayload, Nlmsghdr},
     rtnl::{Ifaddrmsg, IfaddrmsgBuilder},
 };
-use std::net::Ipv4Addr;
+use nix::net::if_::{if_indextoname, if_nametoindex};
+use std::collections::BTreeMap;
 
-pub struct AddrGetRequest {}
+pub struct AddrGetRequest {
+    if_index: Option<u32>,
+}
 
 impl AddrGetRequest {
-    pub fn send(h: &mut NetlinkRouteHandle) -> Result<(), Error> {
+    pub fn for_ifname(ifname: &str) -> Result<Self, Error> {
+        let if_index = if_nametoindex(ifname).map_err(|_| Error::LibcError)?;
+        Ok(AddrGetRequest {
+            if_index: Some(if_index),
+        })
+    }
+
+    pub fn all() -> Self {
+        AddrGetRequest { if_index: None }
+    }
+
+    pub fn send(&self, h: &mut NetlinkRouteHandle) -> Result<AddrGetResponse, Error> {
         let ifaddrmsg = IfaddrmsgBuilder::default()
             .ifa_family(RtAddrFamily::Inet)
             .ifa_prefixlen(0)
             .ifa_scope(RtScope::Universe)
-            .ifa_index(0)
+            .ifa_index(self.if_index.unwrap_or(0))
             .build()?;
         let recv: NlRouterReceiverHandle<Rtm, Ifaddrmsg> = h
             .rtnl
-            .send(Rtm::Getaddr, NlmF::ROOT, NlPayload::Payload(ifaddrmsg))
+            .send(Rtm::Getaddr, NlmF::DUMP, NlPayload::Payload(ifaddrmsg))
             .map_err(|_| Error::SendError)?;
-        let mut addrs = Vec::<Ipv4Addr>::with_capacity(1);
+
+        let mut interfaces_by_index = BTreeMap::new();
+
         for response in recv {
             let header: Nlmsghdr<Rtm, Ifaddrmsg> =
                 response.map_err(|_| Error::NlRouterMiscError)?;
@@ -34,30 +52,58 @@ impl AddrGetRequest {
                 if header.nl_type() != &Rtm::Newaddr {
                     return Err(Error::UnexpectedNlType);
                 }
-                if p.ifa_scope() != &RtScope::Universe {
-                    continue;
-                }
-                let idx = *p.ifa_index();
+
+                let if_index: u32 = *p.ifa_index();
+
+                let mut interface = interfaces_by_index
+                    .remove(&if_index)
+                    .unwrap_or_else(|| AddrGetInterface::default());
+
                 let family = *p.ifa_family();
+                let if_name = if_indextoname(if_index)
+                    .ok()
+                    .and_then(|n| n.into_string().ok());
+                let prefix_len: u8 = *p.ifa_prefixlen();
 
-                println!("family: {:?} idx={idx}", family);
+                println!(
+                    "family: {:?} idx={if_index} if_name={:?} scope={:?} prefix={prefix_len}",
+                    family,
+                    if_name,
+                    p.ifa_scope()
+                );
 
+                let (mut local, mut address, mut broadcast, mut label) = (None, None, None, None);
                 for rtattr in p.rtattrs().iter() {
-                    println!("{:#?}", rtattr);
-                    if rtattr.rta_type() == &Ifa::Local {
-                        addrs.push(Ipv4Addr::from(u32::from_be(
-                            rtattr.get_payload_as::<u32>().map_err(|_| Error::DeError)?,
-                        )));
+                    match *rtattr.rta_type() {
+                        Ifa::Local => local = Some(rtattr_to_ipv4(rtattr)?),
+
+                        Ifa::Address => address = Some(rtattr_to_ipv4(rtattr)?),
+                        Ifa::Broadcast => broadcast = Some(rtattr_to_ipv4(rtattr)?),
+
+                        Ifa::Label => label = Some(rtattr_to_string(rtattr)?),
+
+                        other => {
+                            println!("{:?}:{:?}", other, rtattr.payload().as_ref());
+                        }
                     }
                 }
+
+                interface.addresses.push(AddrGetInterfaceAddressV4 {
+                    prefix_len,
+                    local,
+                    address,
+                    broadcast,
+                    label,
+                });
+
+                interfaces_by_index.insert(if_index, interface);
+
+                println!("---\n");
             }
         }
 
-        println!("Local IPv4 addresses:");
-        for addr in addrs {
-            println!("{addr}");
-        }
-
-        Ok(())
+        Ok(AddrGetResponse {
+            interfaces: interfaces_by_index,
+        })
     }
 }

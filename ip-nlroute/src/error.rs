@@ -20,4 +20,6 @@ pub enum Error {
     DeError,
     #[error("Send error")]
     SendError,
+    #[error("Libc Error")]
+    LibcError,
 }
