@@ -20,7 +20,10 @@ pub struct AddrGetRequest {
 
 impl AddrGetRequest {
     pub fn for_ifname(ifname: &str) -> Result<Self, Error> {
-        let if_index = if_nametoindex(ifname).map_err(|_| Error::LibcError)?;
+        let if_index = if_nametoindex(ifname).map_err(|e| Error::InterfaceLookup {
+            ifname: ifname.to_owned(),
+            source: e,
+        })?;
         Ok(AddrGetRequest {
             if_index: Some(if_index),
         })
@@ -40,16 +43,19 @@ impl AddrGetRequest {
         let recv: NlRouterReceiverHandle<Rtm, Ifaddrmsg> = h
             .rtnl
             .send(Rtm::Getaddr, NlmF::DUMP, NlPayload::Payload(ifaddrmsg))
-            .map_err(|_| Error::SendError)?;
+            .map_err(|e| Error::Send(Box::new(e)))?;
 
         let mut interfaces_by_index = BTreeMap::new();
 
         for response in recv {
             let header: Nlmsghdr<Rtm, Ifaddrmsg> =
-                response.map_err(|_| Error::NlRouterMiscError)?;
+                response.map_err(|e| Error::Receive(Box::new(e)))?;
             if let NlPayload::Payload(p) = header.nl_payload() {
                 if header.nl_type() != &Rtm::Newaddr {
-                    return Err(Error::UnexpectedNlType);
+                    return Err(Error::UnexpectedNlType {
+                        expected: format!("{:?}", Rtm::Newaddr),
+                        actual: format!("{:?}", header.nl_type()),
+                    });
                 }
 
                 let if_index: u32 = *p.ifa_index();

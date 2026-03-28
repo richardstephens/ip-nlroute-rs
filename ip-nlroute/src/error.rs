@@ -4,22 +4,30 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("I/O error: {0}")]
+    #[error("I/O error")]
     Io(#[from] std::io::Error),
-    #[error("Netlink socker error: {0}")]
+    #[error("netlink socket error")]
     NetlinkSocket(#[from] neli::err::SocketError),
-    #[error("IfaddrMsgBuilder error: {0}")]
+    #[error("failed to build address message")]
     IfaddrMsgBuilder(#[from] neli::rtnl::IfaddrmsgBuilderError),
-    #[error("NlRouter error: {0}")]
-    NlRouterError(#[from] RouterError<u16, Buffer>),
-    #[error("NlRouter misc error")]
-    NlRouterMiscError,
-    #[error("Unexpected NlType")]
-    UnexpectedNlType,
-    #[error("Deserialise error")]
-    DeError,
-    #[error("Send error")]
-    SendError,
-    #[error("Libc Error")]
-    LibcError,
+    #[error("netlink router error")]
+    NlRouter(#[from] RouterError<u16, Buffer>),
+    #[error("failed to send netlink request")]
+    Send(#[source] Box<dyn std::error::Error + Send + Sync>),
+    #[error("failed to receive netlink response")]
+    Receive(#[source] Box<dyn std::error::Error + Send + Sync>),
+    #[error("unexpected netlink message type: expected {expected}, got {actual}")]
+    UnexpectedNlType { expected: String, actual: String },
+    #[error("failed to deserialise {what}")]
+    Deserialise {
+        what: &'static str,
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+    #[error("failed to resolve interface '{ifname}'")]
+    InterfaceLookup {
+        ifname: String,
+        #[source]
+        source: nix::errno::Errno,
+    },
 }
