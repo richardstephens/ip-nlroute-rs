@@ -32,4 +32,6 @@ pub enum Error {
         #[source]
         source: nix::errno::Errno,
     },
+    #[error("Expected exactly 1 {what}, found {len}")]
+    ExpectedExactlyOne { what: &'static str, len: usize },
 }
