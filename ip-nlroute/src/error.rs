@@ -34,4 +34,6 @@ pub enum Error {
     },
     #[error("Expected exactly 1 {what}, found {len}")]
     ExpectedExactlyOne { what: &'static str, len: usize },
+    #[error("Response contained invalid data: {reason}")]
+    InvalidDataInResponse { reason: &'static str },
 }
