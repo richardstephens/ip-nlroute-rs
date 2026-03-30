@@ -1,18 +1,20 @@
 use crate::NetlinkRouteHandle;
 use crate::error::Error;
 use crate::route::{Route, RouteGetResponse, RouteProtocol};
+#[cfg(all(target_os = "linux", feature = "netlink"))]
 use crate::util::mappers::ip::rtattr_to_ipv4;
-use neli::attr::Attribute;
-use neli::router::synchronous::NlRouterReceiverHandle;
+
+#[cfg(all(target_os = "linux", feature = "netlink"))]
 use neli::{
+    attr::Attribute,
     consts::{
         nl::NlmF,
         rtnl::{RtAddrFamily, RtScope, RtTable, Rta, Rtm, Rtn, Rtprot},
     },
     nl::{NlPayload, Nlmsghdr},
+    router::synchronous::NlRouterReceiverHandle,
     rtnl::{Rtmsg, RtmsgBuilder},
 };
-use nix::net::if_::if_indextoname;
 
 pub struct RouteGetRequest;
 
@@ -27,7 +29,13 @@ impl RouteGetRequest {
         RouteGetRequest
     }
 
+    #[cfg(not(all(target_os = "linux", feature = "netlink")))]
+    pub fn send(&self, _h: &mut NetlinkRouteHandle) -> Result<RouteGetResponse, Error> {
+        Err(Error::NotImplemented)
+    }
+    #[cfg(all(target_os = "linux", feature = "netlink"))]
     pub fn send(&self, h: &mut NetlinkRouteHandle) -> Result<RouteGetResponse, Error> {
+        use nix::net::if_::if_indextoname;
         let rtmsg = RtmsgBuilder::default()
             .rtm_family(RtAddrFamily::Inet)
             .rtm_dst_len(0)

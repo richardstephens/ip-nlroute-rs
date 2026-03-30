@@ -1,9 +1,13 @@
 use crate::addr::flush_response::AddrFlushResponse;
-use neli::consts::nl::NlmF;
-use neli::consts::rtnl::{RtAddrFamily, RtScope, Rtm};
-use neli::nl::NlPayload;
-use neli::router::synchronous::NlRouterReceiverHandle;
-use neli::rtnl::{Ifaddrmsg, IfaddrmsgBuilder};
+#[cfg(all(target_os = "linux", feature = "netlink"))]
+use neli::{
+    consts::nl::NlmF,
+    consts::rtnl::{RtAddrFamily, RtScope, Rtm},
+    nl::NlPayload,
+    router::synchronous::NlRouterReceiverHandle,
+    rtnl::{Ifaddrmsg, IfaddrmsgBuilder},
+};
+#[cfg(all(target_os = "linux", feature = "netlink"))]
 use nix::net::if_::if_nametoindex;
 
 use crate::NetlinkRouteHandle;
@@ -14,6 +18,12 @@ pub struct AddrFlushRequest {
 }
 
 impl AddrFlushRequest {
+    #[cfg(not(all(target_os = "linux", feature = "netlink")))]
+    pub fn for_ifname(_ifname: &str) -> Result<Self, Error> {
+        Err(Error::NotImplemented)
+    }
+
+    #[cfg(all(target_os = "linux", feature = "netlink"))]
     pub fn for_ifname(ifname: &str) -> Result<Self, Error> {
         let if_index = if_nametoindex(ifname).map_err(|e| Error::InterfaceLookup {
             ifname: ifname.to_owned(),
@@ -22,6 +32,12 @@ impl AddrFlushRequest {
         Ok(AddrFlushRequest { if_index })
     }
 
+    #[cfg(not(all(target_os = "linux", feature = "netlink")))]
+    pub fn send(&self, h: &mut NetlinkRouteHandle) -> Result<AddrFlushResponse, Error> {
+        Err(Error::NotImplemented)
+    }
+
+    #[cfg(all(target_os = "linux", feature = "netlink"))]
     pub fn send(&self, h: &mut NetlinkRouteHandle) -> Result<AddrFlushResponse, Error> {
         let mut addresses_flushed: usize = 0;
 

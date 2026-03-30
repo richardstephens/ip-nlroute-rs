@@ -1,5 +1,3 @@
-use neli::consts::rtnl::IfaF;
-
 /// Flags associated with an interface address.
 #[derive(Default, Clone, Copy, Debug)]
 pub struct AddressFlags {
@@ -13,8 +11,10 @@ pub struct AddressFlags {
     pub permanent: bool,
 }
 
-impl From<IfaF> for AddressFlags {
-    fn from(value: IfaF) -> Self {
+#[cfg(all(target_os = "linux", feature = "netlink"))]
+impl From<neli::consts::rtnl::IfaF> for AddressFlags {
+    fn from(value: neli::consts::rtnl::IfaF) -> Self {
+        use neli::consts::rtnl::IfaF;
         Self {
             secondary: value.contains(IfaF::SECONDARY),
             nodad: value.contains(IfaF::NODAD),

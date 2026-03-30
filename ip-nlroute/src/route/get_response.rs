@@ -1,3 +1,4 @@
+#[cfg(all(target_os = "linux", feature = "netlink"))]
 use neli::consts::rtnl::{RtScope, RtmF, Rtn, Rtprot};
 use std::net::Ipv4Addr;
 
@@ -31,6 +32,7 @@ pub struct RouteFlags {
     pub trap: bool,
 }
 
+#[cfg(all(target_os = "linux", feature = "netlink"))]
 impl From<RtmF> for RouteFlags {
     fn from(value: RtmF) -> Self {
         let bits: u32 = value.into();
@@ -67,6 +69,7 @@ pub enum RouteProtocol {
     Other(u8),
 }
 
+#[cfg(all(target_os = "linux", feature = "netlink"))]
 impl From<Rtprot> for RouteProtocol {
     fn from(p: Rtprot) -> Self {
         match p {
@@ -91,6 +94,7 @@ pub enum RouteScope {
     Other(u8),
 }
 
+#[cfg(all(target_os = "linux", feature = "netlink"))]
 impl From<RtScope> for RouteScope {
     fn from(s: RtScope) -> Self {
         match s {
@@ -120,7 +124,7 @@ pub enum RouteType {
     Xresolve,
     Other(u8),
 }
-
+#[cfg(all(target_os = "linux", feature = "netlink"))]
 impl From<Rtn> for RouteType {
     fn from(value: Rtn) -> Self {
         match value {

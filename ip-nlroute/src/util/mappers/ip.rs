@@ -1,8 +1,5 @@
 use crate::error::Error;
-use neli::attr::Attribute;
-use neli::consts::rtnl::RtaType;
-use neli::rtnl::Rtattr;
-use neli::types::Buffer;
+use neli::{attr::Attribute, consts::rtnl::RtaType, rtnl::Rtattr, types::Buffer};
 use std::net::Ipv4Addr;
 
 pub fn rtattr_to_ipv4<T: RtaType>(rtattr: &Rtattr<T, Buffer>) -> Result<Ipv4Addr, Error> {

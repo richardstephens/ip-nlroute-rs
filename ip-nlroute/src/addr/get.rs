@@ -1,17 +1,17 @@
 use crate::NetlinkRouteHandle;
+#[allow(unused)]
 use crate::addr::{AddrGetInterface, AddrGetInterfaceAddressV4, AddrGetResponse, AddressFlags};
 use crate::error::Error;
-use crate::util::mappers::ip::{rtattr_to_ipv4, rtattr_to_string};
-use neli::router::synchronous::NlRouterReceiverHandle;
+#[cfg(all(target_os = "linux", feature = "netlink"))]
 use neli::{
     consts::{
         nl::NlmF,
         rtnl::{Ifa, RtAddrFamily, RtScope, Rtm},
     },
     nl::{NlPayload, Nlmsghdr},
+    router::synchronous::NlRouterReceiverHandle,
     rtnl::{Ifaddrmsg, IfaddrmsgBuilder},
 };
-use nix::net::if_::{if_indextoname, if_nametoindex};
 use std::collections::BTreeMap;
 
 pub struct AddrGetRequest {
@@ -19,7 +19,13 @@ pub struct AddrGetRequest {
 }
 
 impl AddrGetRequest {
+    #[cfg(not(all(target_os = "linux", feature = "netlink")))]
+    pub fn for_ifname(_ifname: &str) -> Result<Self, Error> {
+        Err(Error::NotImplemented)
+    }
+    #[cfg(all(target_os = "linux", feature = "netlink"))]
     pub fn for_ifname(ifname: &str) -> Result<Self, Error> {
+        use nix::net::if_::{if_nametoindex};
         let if_index = if_nametoindex(ifname).map_err(|e| Error::InterfaceLookup {
             ifname: ifname.to_owned(),
             source: e,
@@ -33,7 +39,15 @@ impl AddrGetRequest {
         AddrGetRequest { if_index: None }
     }
 
+    #[cfg(not(all(target_os = "linux", feature = "netlink")))]
+    pub fn send(&self, _h: &mut NetlinkRouteHandle) -> Result<AddrGetResponse, Error> {
+        Err(Error::NotImplemented)
+    }
+    #[cfg(all(target_os = "linux", feature = "netlink"))]
     pub fn send(&self, h: &mut NetlinkRouteHandle) -> Result<AddrGetResponse, Error> {
+        use crate::util::mappers::ip::{rtattr_to_ipv4, rtattr_to_string};
+        use nix::net::if_::{if_indextoname};
+
         let ifaddrmsg = IfaddrmsgBuilder::default()
             .ifa_family(RtAddrFamily::Inet)
             .ifa_prefixlen(0)
