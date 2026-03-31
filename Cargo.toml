@@ -7,7 +7,7 @@ resolver = "2"
 
 [workspace.package]
 description = "High(er)-level interface for working with host network configuration on linux"
-version = "0.0.2-dev"
+version = "0.0.2"
 license = "MIT"
 repository = "https://github.com/richardstephens/ip-nlroute-rs"
 readme = "README.md"
