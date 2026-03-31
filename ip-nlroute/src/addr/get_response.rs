@@ -27,8 +27,9 @@ impl AddrGetResponse {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct AddrGetInterface {
+    pub if_name: Option<String>,
     pub(crate) addresses: Vec<AddrGetInterfaceAddressV4>,
 }
 

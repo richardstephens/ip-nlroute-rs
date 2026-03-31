@@ -25,7 +25,7 @@ impl AddrGetRequest {
     }
     #[cfg(all(target_os = "linux", feature = "netlink"))]
     pub fn for_ifname(ifname: &str) -> Result<Self, Error> {
-        use nix::net::if_::{if_nametoindex};
+        use nix::net::if_::if_nametoindex;
         let if_index = if_nametoindex(ifname).map_err(|e| Error::InterfaceLookup {
             ifname: ifname.to_owned(),
             source: e,
@@ -46,7 +46,7 @@ impl AddrGetRequest {
     #[cfg(all(target_os = "linux", feature = "netlink"))]
     pub fn send(&self, h: &mut NetlinkRouteHandle) -> Result<AddrGetResponse, Error> {
         use crate::util::mappers::ip::{rtattr_to_ipv4, rtattr_to_string};
-        use nix::net::if_::{if_indextoname};
+        use nix::net::if_::if_indextoname;
 
         let ifaddrmsg = IfaddrmsgBuilder::default()
             .ifa_family(RtAddrFamily::Inet)
@@ -74,9 +74,15 @@ impl AddrGetRequest {
 
                 let if_index: u32 = *p.ifa_index();
 
-                let mut interface = interfaces_by_index
-                    .remove(&if_index)
-                    .unwrap_or_else(AddrGetInterface::default);
+                let mut interface =
+                    interfaces_by_index
+                        .remove(&if_index)
+                        .unwrap_or_else(|| AddrGetInterface {
+                            if_name: if_indextoname(if_index)
+                                .ok()
+                                .and_then(|n| n.into_string().ok()),
+                            addresses: vec![],
+                        });
 
                 let family = *p.ifa_family();
                 let if_name = if_indextoname(if_index)
