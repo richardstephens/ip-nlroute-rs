@@ -128,6 +128,27 @@ impl AddrGetRequest {
             }
         }
 
+        if let Some(if_index) = self.if_index
+            && interfaces_by_index.is_empty()
+        {
+            // if the user requested a specific interface but it doesn't have any addresses,
+            // it won't return any payloads above. Crate an entry for it in the map anyway so that
+            // the user can use .get_only()
+            interfaces_by_index.insert(
+                if_index,
+                AddrGetInterface {
+                    if_name: if_indextoname(if_index)
+                        .map_err(|e| Error::IfIndexLookup {
+                            ifindex: if_index,
+                            source: e,
+                        })?
+                        .into_string()
+                        .ok(),
+                    addresses: vec![],
+                },
+            );
+        }
+
         Ok(AddrGetResponse {
             interfaces: interfaces_by_index,
         })

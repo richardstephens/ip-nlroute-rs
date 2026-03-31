@@ -37,6 +37,13 @@ pub enum Error {
         #[source]
         source: nix::errno::Errno,
     },
+    #[cfg(all(target_os = "linux", feature = "netlink"))]
+    #[error("failed to resolve interface index '{ifindex}'")]
+    IfIndexLookup {
+        ifindex: u32,
+        #[source]
+        source: nix::errno::Errno,
+    },
     #[error("Expected exactly 1 {what}, found {len}")]
     ExpectedExactlyOne { what: &'static str, len: usize },
     #[error("Response contained invalid data: {reason}")]
