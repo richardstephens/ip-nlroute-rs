@@ -84,18 +84,7 @@ impl AddrGetRequest {
                             addresses: vec![],
                         });
 
-                let family = *p.ifa_family();
-                let if_name = if_indextoname(if_index)
-                    .ok()
-                    .and_then(|n| n.into_string().ok());
                 let prefix_len: u8 = *p.ifa_prefixlen();
-
-                println!(
-                    "family: {:?} idx={if_index} if_name={:?} scope={:?} prefix={prefix_len}",
-                    family,
-                    if_name,
-                    p.ifa_scope()
-                );
 
                 let mut local = None;
                 let mut address = None;
@@ -108,9 +97,7 @@ impl AddrGetRequest {
                         Ifa::Address => address = Some(rtattr_to_ipv4(rtattr)?),
                         Ifa::Broadcast => broadcast = Some(rtattr_to_ipv4(rtattr)?),
                         Ifa::Label => label = Some(rtattr_to_string(rtattr)?),
-                        _other => {
-                            //    println!("{:?}:{:?}", _other, rtattr.payload().as_ref());
-                        }
+                        _other => {}
                     }
                 }
 
@@ -124,7 +111,6 @@ impl AddrGetRequest {
                 });
 
                 interfaces_by_index.insert(if_index, interface);
-                //println!("---\n");
             }
         }
 
