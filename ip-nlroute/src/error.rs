@@ -24,6 +24,10 @@ pub enum Error {
     IfinfoMsgBuilder(#[from] neli::rtnl::IfinfomsgBuilderError),
 
     #[cfg(all(target_os = "linux", feature = "netlink"))]
+    #[error("failed to build netlink attribute")]
+    RtattrBuilder(#[from] neli::rtnl::RtattrBuilderError),
+
+    #[cfg(all(target_os = "linux", feature = "netlink"))]
     #[error("netlink router error")]
     NlRouter(#[from] RouterError<u16, Buffer>),
 
