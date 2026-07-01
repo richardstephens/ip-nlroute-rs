@@ -2,6 +2,7 @@ use crate::NetlinkRouteHandle;
 #[allow(unused)]
 use crate::addr::{AddrGetInterface, AddrGetInterfaceAddressV4, AddrGetResponse, AddressFlags};
 use crate::error::Error;
+use crate::util::mappers::interface::resolve_ifname;
 #[cfg(all(target_os = "linux", feature = "netlink"))]
 use neli::{
     consts::{
@@ -25,13 +26,8 @@ impl AddrGetRequest {
     }
     #[cfg(all(target_os = "linux", feature = "netlink"))]
     pub fn for_ifname(ifname: &str) -> Result<Self, Error> {
-        use nix::net::if_::if_nametoindex;
-        let if_index = if_nametoindex(ifname).map_err(|e| Error::InterfaceLookup {
-            ifname: ifname.to_owned(),
-            source: e,
-        })?;
         Ok(AddrGetRequest {
-            if_index: Some(if_index),
+            if_index: Some(resolve_ifname(ifname)?),
         })
     }
 
