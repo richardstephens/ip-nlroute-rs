@@ -16,7 +16,11 @@ use neli::{
     rtnl::{Rtmsg, RtmsgBuilder},
 };
 
-pub struct RouteGetRequest;
+pub struct RouteGetRequest {
+    /// When set, only return routes that would match this destination address
+    /// (mirrors `ip route show to match ADDR`).
+    to_match: Option<std::net::Ipv4Addr>,
+}
 
 impl Default for RouteGetRequest {
     fn default() -> Self {
@@ -26,7 +30,13 @@ impl Default for RouteGetRequest {
 
 impl RouteGetRequest {
     pub fn new() -> Self {
-        RouteGetRequest
+        RouteGetRequest { to_match: None }
+    }
+
+    /// Only return routes that would match `addr` (as `ip route show to match`).
+    pub fn to_match(mut self, addr: std::net::Ipv4Addr) -> Self {
+        self.to_match = Some(addr);
+        self
     }
 
     #[cfg(not(all(target_os = "linux", feature = "netlink")))]
@@ -105,6 +115,14 @@ impl RouteGetRequest {
                     }
                 }
 
+                // Client-side "to match" filter, as iproute2 does: keep only
+                // routes whose prefix would cover the queried address.
+                if let Some(target) = self.to_match
+                    && !route_covers(dst, dst_prefix_len, target)
+                {
+                    continue;
+                }
+
                 let oif_name =
                     oif.and_then(|idx| if_indextoname(idx).ok().and_then(|n| n.into_string().ok()));
 
@@ -125,4 +143,24 @@ impl RouteGetRequest {
 
         Ok(RouteGetResponse { routes })
     }
+}
+
+/// Whether the route `dst`/`prefix_len` (a `None` dst meaning the default
+/// route) covers `target`.
+#[cfg(all(target_os = "linux", feature = "netlink"))]
+fn route_covers(
+    dst: Option<std::net::Ipv4Addr>,
+    prefix_len: u8,
+    target: std::net::Ipv4Addr,
+) -> bool {
+    if prefix_len == 0 {
+        return true;
+    }
+    let mask: u32 = if prefix_len >= 32 {
+        u32::MAX
+    } else {
+        !((1u32 << (32 - prefix_len)) - 1)
+    };
+    let network = u32::from(dst.unwrap_or(std::net::Ipv4Addr::UNSPECIFIED));
+    (u32::from(target) & mask) == (network & mask)
 }
