@@ -16,6 +16,9 @@ pub enum Error {
     #[error("failed to build route message")]
     RtMsgBuilder(#[from] neli::rtnl::RtmsgBuilderError),
     #[cfg(all(target_os = "linux", feature = "netlink"))]
+    #[error("failed to build link message")]
+    IfinfoMsgBuilder(#[from] neli::rtnl::IfinfomsgBuilderError),
+    #[cfg(all(target_os = "linux", feature = "netlink"))]
     #[error("netlink router error")]
     NlRouter(#[from] RouterError<u16, Buffer>),
     #[error("failed to send netlink request")]

@@ -1,10 +1,12 @@
 use crate::addr::addr_main;
 use crate::args::{Args, Object};
+use crate::link::link_main;
 use crate::route::route_main;
 use clap::Parser;
 
 mod addr;
 mod args;
+mod link;
 mod route;
 
 fn main() -> anyhow::Result<()> {
@@ -12,6 +14,7 @@ fn main() -> anyhow::Result<()> {
 
     match args.obj {
         Object::Addr(args) => addr_main(args),
+        Object::Link(args) => link_main(args),
         Object::Route(args) => route_main(args),
     }?;
 
