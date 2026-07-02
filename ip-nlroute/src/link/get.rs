@@ -80,6 +80,9 @@ impl LinkGetRequest {
                     continue;
                 }
 
+                // `ifi_type` is the ARPHRD_* hardware type; recover the raw
+                // value (neli's Arphrd enum omits some, e.g. WiFi) and map it.
+                let hw_type = crate::link::get_response::LinkType::from(u16::from(*p.ifi_type()));
                 let flags = (*p.ifi_flags()).into();
 
                 let mut if_name = None;
@@ -109,6 +112,7 @@ impl LinkGetRequest {
                     Link {
                         if_index,
                         if_name,
+                        hw_type,
                         flags,
                         mtu,
                         address,
