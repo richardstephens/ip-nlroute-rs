@@ -3,6 +3,8 @@ use crate::NetlinkRouteHandle;
 use crate::addr::{AddrGetInterface, AddrGetInterfaceAddressV4, AddrGetResponse, AddressFlags};
 use crate::error::Error;
 #[cfg(all(target_os = "linux", feature = "netlink"))]
+use crate::util::mappers::interface::resolve_ifname;
+#[cfg(all(target_os = "linux", feature = "netlink"))]
 use neli::{
     consts::{
         nl::NlmF,
@@ -13,8 +15,6 @@ use neli::{
     rtnl::{Ifaddrmsg, IfaddrmsgBuilder},
 };
 use std::collections::BTreeMap;
-#[cfg(all(target_os = "linux", feature = "netlink"))]
-use crate::util::mappers::interface::resolve_ifname;
 
 pub struct AddrGetRequest {
     if_index: Option<u32>,
